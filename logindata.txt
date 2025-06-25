@@ -1,0 +1,63 @@
+[
+  {
+    "name": "Insta Finn",
+    "email": "instafin@gmail.com",
+    "mobile": "9403552019",
+    "role": "admin"
+  },
+  {
+    "name": "Loan Operator",
+    "email": "bankoperatorbob2@gmail.com",
+    "mobile": "7020524215",
+    "role": "bankOperator"
+  },
+  {
+    "name": "Akshay Musale",
+    "email": "bankoperatorbob@gmail.com",
+    "mobile": "7020304050",
+    "role": "bankOperator"
+  },
+  {
+    "name": "Loan Operator Bidri",
+    "email": "bankoperator@gmail.com",
+    "mobile": "9874562111",
+    "role": "bankOperator"
+  },
+  {
+    "name": "sanket patil",
+    "email": "sanketp@gmail.com",
+    "mobile": "
+    ",
+    "role": "subAgent"
+  },
+  {
+    "name": "shubham Patil",
+    "email": "shubham@gmail.com",
+    "mobile": "7894561237",
+    "role": "subAgent"
+  },
+  {
+    "name": "Sanket Chougule",
+    "email": "sanket@gmail.com",
+    "mobile": "4785488578",
+    "role": "subAgent"
+  },
+  {
+    "name": "suraj pimpale",
+    "email": "surajpim@gmail.com",
+    "mobile": "9046663567",
+    "role": "subAgent"
+  },
+  {
+    "name": "Sumit Patil",
+    "email": "sumitpatil@gmail.com",
+    "mobile": "9158214644",
+    "role": "agent"
+  },
+  {
+    "name": "Master Admin",
+    "email": "master@gmail.com",
+    "mobile": "7030362818",
+    "role": "masterAdmin"
+  }
+]
