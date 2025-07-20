@@ -14,10 +14,11 @@ import CreateBank from "@/component/CreateUsers/CreateBank";
 import { getBanks } from "@/lib";
 
 const AddUser = () => {
-  const [collapsed, setCollapsed] = useState(false);
-
+  const [collapsed,   setCollapsed] = useState(false);
+  
   const router = useRouter();
   const user = useGetQueryParam("user");
+  const applicationId = useGetQueryParam("id");
   console.log(user)
   const userCreation=useMemo(() => {
     if (user?.toLowerCase() == "agent") {
@@ -25,7 +26,7 @@ const AddUser = () => {
     } else if (user?.toLowerCase() == "lender") {
       return <CreateLender />;
     } else if (user?.toLowerCase() == "client") {
-      return <CreateClient />;
+      return <CreateClient applicationId={applicationId} />;
     } else if (user?.toLowerCase() == "subagent") {
       return <CreateUser userRole={"subAgent"} />;
     } else if(user?.toLowerCase() == "bank"){
@@ -37,7 +38,7 @@ const AddUser = () => {
         <h1>Invalid User</h1>
       </div>
     }
-  }, [user]);
+  }, [user, applicationId]);
   return (
     <Layout setSidebarCollapsed={setCollapsed}>
       {userCreation}      

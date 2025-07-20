@@ -1,3 +1,66 @@
+
+// const Applications = () => {
+//   const [collapsed, setCollapsed] = useState(false);
+//   const [applications, setApplication] = useState([]);
+//   const router = useRouter();
+//   const type = useGetQueryParam("type");
+//   const role = getRole();
+//   const user = getUser();
+
+//   useEffect(() => {
+//     const fetchAllApplications = async () => {
+//       try {
+//         const response = await getLoanApplicationByBranchId(
+//           user.role,
+//           user._id
+//         );
+//         if (response.status == 200) {
+//           setApplication(response.data);
+//           // showToast("success", "Application Fetched Successfully");
+//         } else {
+//           // showToast("error", response.message);
+//           console.log(response.message);
+//         }
+//       } catch (error) {
+//         console.log(error);
+//       }
+//     };
+
+//     fetchAllApplications();
+//   }, [type]);
+
+//   const applicationList = useMemo(() => {
+//     if (role?.toLowerCase() == "agent") {
+//       return <SubUserApplicant />;
+//     } else if (role?.toLowerCase() == "subagent") {
+//       return <LoanApplications />;
+//     } else if (role?.toLowerCase() == "masteradmin") {
+//       return <UserApplicant />;
+//     } else if (
+//       ["admin", "bankoperator", "masteradmin"].includes(role?.toLowerCase()) && applications?.length
+//     ) {
+//       // return <BankApplicant />;
+//       return <LoanApplications applications={applications} />;
+//     } else {
+//       return (
+//         <div className="text-center text-red-500 text-2xl font-bold mt-10">
+//           <h1>Invalid User</h1>
+//         </div>
+//       );
+//     }
+//   }, [role]);
+
+  
+
+//   return (
+//     <Layout setSidebarCollapsed={setCollapsed}>
+//       <LoanApplications applications={applications} />
+//     </Layout>
+//   );
+// };
+
+// export default Applications;
+
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
@@ -9,7 +72,8 @@ import { useRouter } from "next/navigation";
 import useGetQueryParam from "@/component/utils/commonFunctions";
 import SubUserApplicant from "@/component/Applications/SubUserApplicant";
 import { getRole, getUser } from "@/lib/commonFunctions";
-import { getLoanApplicationByBranchId } from "@/lib";
+import { getVisibleLoanApplications } from "@/lib"; 
+
 
 const Applications = () => {
   const [collapsed, setCollapsed] = useState(false);
@@ -22,54 +86,93 @@ const Applications = () => {
   useEffect(() => {
     const fetchAllApplications = async () => {
       try {
-        const response = await getLoanApplicationByBranchId(
-          user.role,
-          user._id
-        );
-        if (response.status == 200) {
-          setApplication(response.data);
-          // showToast("success", "Application Fetched Successfully");
+        const response = await getVisibleLoanApplications(); 
+        if (response.status === 200) {
+          setApplication(response.data.data);
         } else {
-          // showToast("error", response.message);
-          console.log(response.message);
+          console.error(response.message);
         }
       } catch (error) {
-        console.log(error);
+        console.error("Failed to fetch visible loan applications:", error);
       }
     };
 
     fetchAllApplications();
   }, [type]);
 
+  // const applicationList = useMemo(() => {
+  //   if (role?.toLowerCase() === "agent") {
+  //     return <SubUserApplicant />;
+  //   } else if (role?.toLowerCase() === "subagent") {
+  //     return <LoanApplications />;
+  //   } else if (role?.toLowerCase() === "masteradmin") {
+  //     return <UserApplicant />;
+  //   } else if (
+  //     ["admin", "bankoperator", "masteradmin"].includes(role?.toLowerCase()) &&
+  //     applications?.length
+  //   ) {
+  //     return <LoanApplications applications={applications} />;
+  //   } else {
+  //     return (
+  //       <div className="text-center text-red-500 text-2xl font-bold mt-10">
+  //         <h1>Invalid User</h1>
+  //       </div>
+  //     );
+  //   }
+  // }, [role, applications]);
+
   const applicationList = useMemo(() => {
-    if (role?.toLowerCase() == "agent") {
-      return <SubUserApplicant />;
-    } else if (role?.toLowerCase() == "subagent") {
-      return <LoanApplications />;
-    } else if (role?.toLowerCase() == "masteradmin") {
-      return <UserApplicant />;
-    } else if (
-      ["admin", "bankoperator", "masteradmin"].includes(role?.toLowerCase()) && applications?.length
-    ) {
-      // return <BankApplicant />;
-      return <LoanApplications applications={applications} />;
-    } else {
-      return (
-        <div className="text-center text-red-500 text-2xl font-bold mt-10">
-          <h1>Invalid User</h1>
-        </div>
+  const lowerRole = role?.toLowerCase();
+  let filteredApplications = applications;
+
+  if (lowerRole === "bankoperator") {
+    const operatorBranchIds = user?.branches || [];
+
+    filteredApplications = applications.filter((app) => {
+      const bankEntries = app?.bankData || [];
+
+      return bankEntries.some((bank) =>
+        bank?.branches?.some((branch) =>
+           operatorBranchIds.includes(branch.branchId?._id)       
+     )
       );
-    }
-  }, [role]);
+    });
+  }
+
+  if (lowerRole === "agent") {
+    return <LoanApplications applications={filteredApplications} role={role} />;
+  }
+
+  if (lowerRole === "subagent") {
+    return <LoanApplications applications={filteredApplications} role={role} />;
+  }
+
+  if (lowerRole === "masteradmin") {
+    return <LoanApplications applications={filteredApplications} role={role} />;
+  }
+
+  if (["admin", "bankoperator"].includes(lowerRole)) {
+    return <LoanApplications applications={filteredApplications} role={role} />;
+  }
+
+  return (
+    <div className="text-center text-red-500 text-2xl font-bold mt-10">
+      <h1>Invalid User</h1>
+    </div>
+  );
+}, [role, applications]);
 
   return (
     <Layout setSidebarCollapsed={setCollapsed}>
-      <LoanApplications applications={applications} />
+      {applicationList}
     </Layout>
   );
+ 
+
 };
 
 export default Applications;
+
 
 const borrowingsData = [
   {
@@ -162,3 +265,5 @@ const renderLoanDetails = (loan) => (
     </div>
   </>
 );
+
+

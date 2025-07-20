@@ -1,3 +1,67 @@
+// "use client";
+
+// import React, { useEffect, useMemo, useState } from "react";
+// import Layout from "@/component/Layout/layout";
+// import LoanApplications from "@/component/Applications/LoanApplications";
+// import UserApplicant from "@/component/Applications/UserApplicant";
+// import BankApplicant from "@/component/Applications/BankApplicant";
+// import { useRouter } from "next/navigation";
+// import useGetQueryParam from "@/component/utils/commonFunctions";
+// import SubUserApplicant from "@/component/Applications/SubUserApplicant";
+// import { getId, getRole } from "@/lib/commonFunctions";
+// import { getAllUsers } from "@/lib";
+// import { showToast } from "@/utils/toastUtils";
+
+// const Users = () => {
+//   const [collapsed, setCollapsed] = useState(false);
+//   const router = useRouter();
+//   console.log(router);
+//   const type = useGetQueryParam("type");
+//   const role = getRole();
+//   const [userData, setUserData] = useState([]);
+
+//   useEffect(() => {
+//     console.log("Type parameter:", type);
+//     fetchUserData()
+//   }, [type]);
+//     const fetchUserData = async () => {
+//       try {
+//         const response = await getAllUsers(getId());
+//         console.log(response);
+//         if (response.status == 200) {
+//           setUserData(response.data);
+//           showToast("success", response.message);
+//           showToast("success", "Applications Fetched");
+//         } else {
+//           showToast("error", response.message);
+//           console.log(response.message);
+//         }
+//       } catch (error) {
+//         console.log(error);
+//       }
+//     };
+//     console.log(role)
+//     const userList=useMemo(()=>{
+//         if(["masterAdmin", "admin", "agent"].includes(role)){
+//             console.log(userData)
+//             return <SubUserApplicant data={userData} role={role} />
+//         }else if(["agent", "subAgent"].includes(role)){
+//             return <LoanApplications />
+//         }else if(["masterAdmin", "admin"].includes(role)){
+//             return <UserApplicant />
+//         }else if(["masterAdmin", "admin", "bankOperator"].includes(role)){
+//             return <BankApplicant />
+//         }
+//     },[role, userData])
+//   return (
+//     <Layout setSidebarCollapsed={setCollapsed}>
+//       {userList}
+//     </Layout>
+//   );
+// };
+
+// export default Users;
+
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
@@ -15,44 +79,52 @@ import { showToast } from "@/utils/toastUtils";
 const Users = () => {
   const [collapsed, setCollapsed] = useState(false);
   const router = useRouter();
-  console.log(router);
   const type = useGetQueryParam("type");
   const role = getRole();
   const [userData, setUserData] = useState([]);
 
+  // ✅ Show toast message if it was stored before redirect
   useEffect(() => {
-    console.log("Type parameter:", type);
-    fetchUserData()
+    const message = localStorage.getItem("toastMessage");
+    if (message) {
+      showToast("success", message);
+      localStorage.removeItem("toastMessage");
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchUserData();
   }, [type]);
-    const fetchUserData = async () => {
-      try {
-        const response = await getAllUsers(getId());
-        console.log(response);
-        if (response.status == 200) {
-          setUserData(response.data);
-          showToast("success", response.message);
-          showToast("success", "Applications Fetched");
-        } else {
-          showToast("error", response.message);
-          console.log(response.message);
-        }
-      } catch (error) {
-        console.log(error);
+
+  const fetchUserData = async () => {
+    try {
+      const response = await getAllUsers(getId());
+      if (response.status === 200) {
+        setUserData(response.data);
+        console.log("userData in Users component:", userData);
+        showToast("success", response.message || "Applications Fetched");
+      } else {
+        showToast("error", response.message || "Failed to fetch users");
       }
-    };
-    console.log(role)
-    const userList=useMemo(()=>{
-        if(["masterAdmin", "admin", "agent"].includes(role)){
-            console.log(userData)
-            return <SubUserApplicant data={userData} role={role} />
-        }else if(["agent", "subAgent"].includes(role)){
-            return <LoanApplications />
-        }else if(["masterAdmin", "admin"].includes(role)){
-            return <UserApplicant />
-        }else if(["masterAdmin", "admin", "bankOperator"].includes(role)){
-            return <BankApplicant />
-        }
-    },[role, userData])
+    } catch (error) {
+      console.log(error);
+      showToast("error", "Something went wrong while fetching users.");
+    }
+  };
+
+  const userList = useMemo(() => {
+    if (["masterAdmin", "admin", "agent"].includes(role)) {
+      return <SubUserApplicant data={userData} role={role} />;
+    } else if (["agent", "subAgent"].includes(role)) {
+      return <LoanApplications />;
+    } else if (["masterAdmin", "admin"].includes(role)) {
+      return <UserApplicant />;
+    } else if (["masterAdmin", "admin", "bankOperator"].includes(role)) {
+      return <BankApplicant />;
+    }
+    return null;
+  }, [role, userData]);
+
   return (
     <Layout setSidebarCollapsed={setCollapsed}>
       {userList}
@@ -61,6 +133,7 @@ const Users = () => {
 };
 
 export default Users;
+
 
 const borrowingsData = [
   {

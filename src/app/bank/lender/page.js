@@ -70,8 +70,8 @@ const Lender = () => {
       console.log(data, BranchData);
       if (
         data.bankId &&
-        data.branchId &&
-        data.loanCriteriaList.length === BranchData[0]?.criteria?.length
+        data.branchId 
+        // &&  data.loanCriteriaList.length === BranchData[0]?.criteria?.length
       ) {
         const response = await createLoanCriteria(data);
         console.log(response);
@@ -142,3 +142,4 @@ const Lender = () => {
 };
 
 export default Lender;
+

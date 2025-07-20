@@ -53,8 +53,10 @@ export default function CommonModal({
   onSave = () => {},
   onCancel = () => {},
   children,
+  onEdit,
   saveText = "Save",
   cancelText = "Cancel",
+  editText = "Edit",
   showTitle = true,
 }) {
   return (
@@ -83,16 +85,30 @@ export default function CommonModal({
         </Box>
 
         {showFooter && (
-          <Box sx={footerStyle}>
-            <Button onClick={onCancel} variant="outlined" color="secondary">
-              {cancelText}
-            </Button>
-            <Button onClick={onSave} variant="contained" color="primary">
-              {saveText}
-            </Button>
-          </Box>
+        <Box sx={footerStyle}>
+        <Button onClick={onCancel} variant="outlined" color="secondary">
+          {cancelText}
+        </Button>
+
+        {onEdit && (
+        <Button onClick={onEdit} variant="contained" color="warning">
+          {editText}
+        </Button>
+      )}
+
+        {saveText && onSave && (
+          <Button onClick={onSave} variant="contained" color="primary">
+            {saveText}
+          </Button>
         )}
+
+      
+  </Box>
+)}
+
       </Box>
     </Modal>
   );
 }
+
+

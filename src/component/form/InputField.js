@@ -14,11 +14,7 @@ const InputField = ({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulating a delay to mimic an API call or slow render
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 5000);
-
+    const timer = setTimeout(() => setLoading(false), 1000);
     return () => clearTimeout(timer);
   }, []);
 
