@@ -869,11 +869,17 @@ const initialFormData = {
   maritalStatus: "",
   spouseName: "",
   spouseDOB: "",
+  spouseMobile: "",
+  spouseEmail: "",
   childrenCount: "",
   fatherName: "",
   fatherDOB: "",
+  fatherMobile: "",
+  fatherEmail: "",
   motherName: "",
   motherDOB: "",
+  motherMobile: "",
+  motherEmail: "",
   incomeSource: "",
   employerOrBusinessName: "",
   employerAddress: "",
@@ -909,11 +915,18 @@ const inputFields = {
     { key: "maritalStatus", label: "Marital Status", type: "select", options: ["Single", "Married", "Divorced", "Separated", "Widowed"] },
     { key: "spouseName", label: "Spouse Name", type: "text" },
     { key: "spouseDOB", label: "Spouse Date of Birth", type: "date" },
+    { key: "spouseMobile", label: "Spouse Mobile", type: "text" },
+    { key: "spouseEmail", label: "Spouse Email", type: "email" },
     { key: "childrenCount", label: "Children (Below 21) Count", type: "number" },
     { key: "fatherName", label: "Father Name", type: "text" },
     { key: "fatherDOB", label: "Father Date of Birth", type: "date" },
+    { key: "fatherMobile", label: "Father Mobile", type: "text" },
+    { key: "fatherEmail", label: "Father Email", type: "email" },
     { key: "motherName", label: "Mother Name", type: "text" },
     { key: "motherDOB", label: "Mother Date of Birth", type: "date" },
+    { key: "motherMobile", label: "Mother Mobile", type: "text" },
+    { key: "motherEmail", label: "Mother Email", type: "email" },
+
   ],
   incomeDetails: [
     { key: "incomeSource", label: "Income Type", type: "radio", options: ["Business", "Salary"] },
@@ -1008,11 +1021,17 @@ const CreateClient = ({ initialData = {}, onClose, applicationId }) => {
           maritalStatus: data.familyInfo?.maritalStatus || "",
           spouseName: data.familyInfo?.spouseName || "",
           spouseDOB: formatDate(data.familyInfo?.spouseDOB),
+          spouseMobile: data.familyInfo?.spouseMobile || "",
+          spouseEmail: data.familyInfo?.spouseEmail || "",
           childrenCount: data.familyInfo?.childrenCount?.toString() || "",
           fatherName: data.familyInfo?.fatherName || "",
           fatherDOB: formatDate(data.familyInfo?.fatherDOB),
+          fatherMobile: data.familyInfo?.fatherMobile || "",
+          fatherEmail: data.familyInfo?.fatherEmail || "",
           motherName: data.familyInfo?.motherName || "",
           motherDOB: formatDate(data.familyInfo?.motherDOB),
+          motherMobile: data.familyInfo?.motherMobile || "",
+          motherEmail: data.familyInfo?.motherEmail || "",
           incomeSource: data.employmentInfo?.incomeSource || "",
           employerOrBusinessName: data.employmentInfo?.employerOrBusinessName || "",
           employerAddress: data.employmentInfo?.employerAddress || "",
@@ -1065,29 +1084,60 @@ const CreateClient = ({ initialData = {}, onClose, applicationId }) => {
           if (doc.type === "itr") docGroups.incomeTaxReturn.push(doc.url);
           if (doc.type === "credit_report") docGroups.creditReport.push(doc.url);
         }
-        setFormData({ ...mapped, ...docGroups });
+       // setFormData({ ...mapped, ...docGroups });
 
+        // setSections((prev) =>
+        //   prev.map((section) => {
+        //     const fields = inputFields[section.key] || [];
+             
+        //     const isComplete = fields.every((field) => {
+        //       if (field.type === "multiDoc") {
+        //         return field.documents.every((doc) => {
+        //           const files = docGroups[doc.key] || [];
+        //           const min = doc.min ?? doc.quantity ?? 1;
+        //           const max = doc.max ?? doc.quantity ?? Infinity;
+        //           return Array.isArray(files) && files.length >= min && files.length <= max;
+        //         });
+        //       }
+        //       return mapped[field.key]?.toString().trim();
+        //     });
+
+        //     return {
+        //       ...section,
+        //       status: isComplete ? "Completed" : "Pending",
+        //     };
+        //   })
+        // );
+
+        const newFormData = { ...mapped, ...docGroups };
+        setFormData(newFormData);
+
+        // This effect should ideally run *after* formData has been set,
+        // or be combined with the formData update if possible.
+        // For simplicity, we'll run it here, but keep in mind the state update
+        // might not be immediate.
         setSections((prev) =>
           prev.map((section) => {
-            const fields = inputFields[section.key] || [];
-            const isComplete = fields.every((field) => {
-              if (field.type === "multiDoc") {
-                return field.documents.every((doc) => {
-                  const files = docGroups[doc.key] || [];
-                  const min = doc.min ?? doc.quantity ?? 1;
-                  const max = doc.max ?? doc.quantity ?? Infinity;
-                  return Array.isArray(files) && files.length >= min && files.length <= max;
-                });
-              }
-              // Skip spouse fields if maritalStatus is Single
-            if (
-              mapped.maritalStatus === "Single" &&
-              ["spouseName", "spouseDOB"].includes(field.key)
-            ) {
-              return true;
-  }
-              return mapped[field.key]?.toString().trim();
-            });
+            let isComplete = false;
+
+            if (section.key === "familyDetails") {
+              // Only maritalStatus is mandatory for familyDetails
+              isComplete = !!newFormData.maritalStatus?.toString().trim();
+            } else {
+              const fields = inputFields[section.key] || [];
+              isComplete = fields.every((field) => {
+                if (field.type === "multiDoc") {
+                  return field.documents.every((doc) => {
+                    const files = newFormData[doc.key] || []; // Use newFormData
+                    const min = doc.min ?? doc.quantity ?? 1;
+                    const max = doc.max ?? doc.quantity ?? Infinity;
+                    return Array.isArray(files) && files.length >= min && files.length <= max;
+                  });
+                }
+                // For other sections, all fields are mandatory (and non-empty)
+                return !!newFormData[field.key]?.toString().trim(); // Use newFormData
+              });
+            }
 
             return {
               ...section,
@@ -1095,12 +1145,49 @@ const CreateClient = ({ initialData = {}, onClose, applicationId }) => {
             };
           })
         );
+
+
       })
       .catch((err) => {
         console.error("Failed to fetch application data:", err);
       })
       .finally(() => setLoading(false));
   }, [applicationId]);
+
+
+  // This useEffect ensures sections are updated whenever formData changes
+  // This is crucial for real-time validation as users type/select
+  useEffect(() => {
+    if (!hydrated) return; // Only run after initial hydration
+
+    setSections((prevSections) =>
+      prevSections.map((section) => {
+        let isComplete = false;
+
+        if (section.key === "familyDetails") {
+          isComplete = !!formData.maritalStatus?.toString().trim();
+        } else {
+          const fields = inputFields[section.key] || [];
+          isComplete = fields.every((field) => {
+            if (field.type === "multiDoc") {
+              return field.documents.every((doc) => {
+                const files = formData[doc.key] || [];
+                const min = doc.min ?? doc.quantity ?? 1;
+                const max = doc.max ?? doc.quantity ?? Infinity;
+                return Array.isArray(files) && files.length >= min && files.length <= max;
+              });
+            }
+            // Ensure values are not just empty strings after trimming
+            return !!formData[field.key]?.toString().trim();
+          });
+        }
+        return {
+          ...section,
+          status: isComplete ? "Completed" : "Pending",
+        };
+      })
+    );
+  }, [formData, hydrated]); // Re-run when formData or hydrated state changes
 
 
 
@@ -1185,47 +1272,7 @@ try{
     setLoading(false);
   }
 
-    // Object.entries(docMap).forEach(([formKey, apiKey]) => {
-    //   const files = formData[formKey];
-    //   if (Array.isArray(files)) {
-    //     files.forEach((file) => {
-    //       if (file instanceof File) {
-    //         form.append(apiKey, file, file.name);
-    //       }
-    //     });
-    //   } else if (files instanceof File) {
-    //     form.append(apiKey, files, files.name);
-    //   }
-    // });
-
-    // if (formData.creditUpload instanceof File) {
-    //   form.append("creditUpload", formData.creditUpload, formData.creditUpload.name);
-    // }
-
-    // try {
-    //   setLoading(true);
-    //   let response;
-    //   if (applicationId) {
-    //     response = await updateLoanApplication(applicationId, form, {
-    //       headers: { "Content-Type": "multipart/form-data" },
-    //     });
-    //   } else {
-    //     response = await createLoanApplication(form, {
-    //       headers: { "Content-Type": "multipart/form-data" },
-    //     });
-    //   }
-    //   console.log("✅ Submit Response:", response?.data);
-    //   if (onClose) onClose();
-    // } catch (err) {
-    //   console.error("❌ Error submitting:", err);
-    // } finally {
-    //   setLoading(false);
-    // }
   };
-
-
-
-  ///////////////////////////
 
   const validateField = (key, value) => {
     let err = "";
@@ -1234,10 +1281,16 @@ try{
         if (!/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(value.toUpperCase())) err = "Invalid PAN";
         break;
       case "applicantMobile":
+      case "spouseMobile":
+      case "fatherMobile":
+      case "motherMobile":
         if (!/^\d{10}$/.test(value)) err = "Mobile must be 10 digits";
         break;
       case "applicantEmail":
       case "workEmail":
+      case "spouseEmail":
+      case "fatherEmail":
+      case "motherEmail":
         if (!/^\S+@\S+\.\S+$/.test(value)) err = "Invalid email";
         break;
       case "applicantPin":
@@ -1320,7 +1373,7 @@ try{
             // 🔒 Conditionally remove spouse fields if "Single"
             if (sec.key === "familyDetails" && formData.maritalStatus === "Single") {
               fieldsToRender = fieldsToRender.filter(
-                (field) => !["spouseName", "spouseDOB"].includes(field.key)
+                (field) => !["spouseName", "spouseDOB", "childrenCount","spouseEmail", "spouseMobile"].includes(field.key)
               );
             }
 
@@ -1366,3 +1419,4 @@ export default CreateClient;
 
 
 
+ 

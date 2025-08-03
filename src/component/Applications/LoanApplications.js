@@ -8,22 +8,16 @@ import SearchableMultiSelectDropdown from "../form/SearchableMultiSelectDropdown
 import { getBanksByUserId, updateLoanApplication, updateLoanBankBranch} from "@/lib";
 import { getId, getRole } from "@/lib/commonFunctions";
 import Accept_Reject from "@/component/Accept_Reject/Accept_Reject";
-import { bankData } from "@/app/data";
-import CreateClient from "../CreateUsers/CreateClient";
 import { useRouter } from "next/navigation";
-
-
 
 const LoanApplications = ({ applications }) => {
   const [collapsed, setCollapsed] = useState(false);
   const [modalData, setModalData] = useState(null);
   const [addBankData, setAddBankData] = useState(null);
   const [selectBankDataMap, setSelectBankDataMap] = useState({});
-  const [showAcceptRejectModal, setShowAcceptRejectModal] = useState(false);
   const [showActionModal, setShowActionModal] = useState(false);
   const [selectedApplication, setSelectedApplication] = useState(null);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [editData, setEditData] = useState(null);
+  const [showPrintPreview, setShowPrintPreview] = useState(false);
 
   const loanApplications = Array.isArray(applications) ? applications : [];
 
@@ -37,9 +31,6 @@ const LoanApplications = ({ applications }) => {
   const role = user?.role?.toLowerCase() || "";
 
   const router = useRouter();
-  console.log("✅ applications prop received:", applications);
-console.log("✅ Parsed array:", loanApplications);
-  console.log("✅ User role:", role);
 
   useEffect(() => {
     document.title = "Applications";
@@ -47,17 +38,28 @@ console.log("✅ Parsed array:", loanApplications);
 
   useEffect(() => {
     if (modalData) fetchBanksAndBranches();
+    console.log(modalData);
   }, [modalData]);
+  
 
+  
   const fetchBanksAndBranches = async () => {
-    try {
-      const { data, status, error } = await getBanksByUserId(getRole(), getId());
+    try { 
+      const payload = { 'applicationId': modalData._id, 'applicantPin': modalData.personalInfo?.applicantPin || '' };
+
+
+      const { data, status, error } = await getBanksByUserId(getRole(), getId(), payload);
       if (error) throw new Error(error);
       if (status === 200) setAddBankData(data);
     } catch (err) {
       console.error("Error fetching banks:", err.message);
     }
+
+    
   };
+
+
+
 
   // Transform selected branch IDs into required bankData format for backend
   const transformToBankData = (branchesData, selectedBranchIds, loanType) => {
@@ -71,16 +73,6 @@ console.log("✅ Parsed array:", loanApplications);
 
     // Group branches by bankId
     const bankMap = new Map();
-
-    // selectedBranches.forEach(branch => {
-    //   if (!bankMap.has(branch.bankId)) {
-    //     bankMap.set(branch.bankId, []);
-    //   }
-    //   bankMap.get(branch.bankId).push({
-    //     branchId: branch._id,
-    //     loanTypes: [loanType], // only one loan type per branch
-    //   });
-    // });
 
     // Convert Map to array to match API payload
     
@@ -103,29 +95,7 @@ console.log("✅ Parsed array:", loanApplications);
     }));
   };
 
-  // const handleSaveSelectedBanks = async () => {
-  //   try {
-  //     const loanType = modalData?.loanDetails?.loanType;
-
-  //     const data = transformToBankData(
-  //       addBankData, // all branches fetched
-  //       selectBankDataMap[modalData._id] || [], // selected branch IDs
-  //       loanType
-  //     );
-
-  //     if (!data) {
-  //       console.warn("No valid bank/branch selection to save.");
-  //       return;
-  //     }
-
-  //     // Update loan application by sending { data: [...] } to backend
-  //     await updateLoanApplication(modalData._id, { data });
-  //     handleModalClose();
-  //   } catch (error) {
-  //     console.error("Error updating loan application:", error);
-  //   }
-  // };
-
+ 
   const handleSaveSelectedBanks = async () => {
   try {
     const loanType = modalData?.loanDetails?.loanType;
@@ -133,11 +103,8 @@ console.log("✅ Parsed array:", loanApplications);
     const selectedBranchIds = Object.values(selectedBranchIdsMap).flat();
 
     const data = transformToBankData(addBankData, selectedBranchIds, loanType);
-    console.log("🚀 Sending bankData to backend:", data);
 
     if (data && Array.isArray(data) && data.length > 0) {
-      console.log("🚀 Sending bankData to backend:", data);
-
       await updateLoanBankBranch(modalData._id, { bankData : data });
       handleModalClose();
     } else {
@@ -150,6 +117,7 @@ console.log("✅ Parsed array:", loanApplications);
 };
 
 const handleModalClose = () => setModalData(null);
+   
 
   return (
     <>
@@ -199,11 +167,13 @@ const handleModalClose = () => setModalData(null);
                 }
               : null
           }
+          modalData={modalData}
           editText="Edit"
           
           showFooter={
             ["admin", "masteradmin", "agent", "subagent", "bankoperator"].includes(role)
           }
+
           showTitle
           title={modalData?.personalInfo?.applicantName || "Loan Application Info"}
           saveText={
@@ -213,10 +183,10 @@ const handleModalClose = () => setModalData(null);
               ? "Action"
               : null
           }
-
-
           cancelText="Cancel"
+         
         >
+          
           <ModalContent
             data={modalData}
             addBankData={addBankData}
@@ -227,10 +197,14 @@ const handleModalClose = () => setModalData(null);
               }))
             }
             selectedBank={selectBankDataMap[modalData?._id] || []}
+            role={role}
           />
+
         </CommonModal>
+
       )}
 
+     
       {/* Accept/Reject Modal */}
       {showActionModal && selectedApplication && (
         <CommonModal
@@ -258,86 +232,10 @@ const handleModalClose = () => setModalData(null);
         </CommonModal>
       )}
 
-      {/* {showEditModal && (
-        <CreateClient
-          open={showEditModal}
-          initialData={editData}
-          onClose={() => setShowEditModal(false)}
-          // ...other props as needed
-        />
-      )} */}
     </>
   );
 };
 
-// const ModalContent = ({ data, addBankData, onSelect, selectedBank }) => {
-//   const cleanedData = cleanLoanApplication(data);
-
-//   return (
-//     <div className="grid grid-cols-1 gap-4">
-//       <div className="flex justify-end">
-//         <AddBankUI
-//           user={data}
-//           banks={addBankData}
-//           onSelect={onSelect}
-//           selectedBank={selectedBank}
-//         />
-//       </div>
-
-//       {Object.entries(cleanedData)
-//         .filter(
-//           ([key]) =>
-//             !["_id", "createdBy", "createdAt", "updatedAt", "__v"].includes(key)
-//         )
-//         .map(([key, value]) =>
-//           key === "documents" && Array.isArray(value) ? (
-//             <details key={key} className="bg-white rounded-lg p-4">
-//               <summary className="font-bold capitalize">{key}</summary>
-//               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
-//                 {value.map((doc, i) => (
-//                   <div
-//                     key={i}
-//                     className="flex flex-col border rounded p-2 bg-gray-50"
-//                   >
-//                     <span className="font-medium text-sm">{doc.name}</span>
-//                     <a
-//                       href={doc.url}
-//                       target="_blank"
-//                       rel="noopener noreferrer"
-//                       className="text-blue-500 underline text-xs"
-//                     >
-//                       View
-//                     </a>
-//                   </div>
-//                 ))}
-//               </div>
-//             </details>
-//           ) : typeof value === "object" && value !== null ? (
-//             <details key={key} className="bg-white rounded-lg p-4">
-//               <summary className="font-bold capitalize">{key}</summary>
-//               <div className="grid grid-cols-1 gap-2 mt-2">
-//                 {Object.entries(value).map(([subKey, subValue]) => (
-//                   <div key={subKey} className="flex justify-between">
-//                     <span className="font-bold">{subKey}</span>
-//                     <span>
-//                       {typeof subValue === "object"
-//                         ? JSON.stringify(subValue)
-//                         : String(subValue)}
-//                     </span>
-//                   </div>
-//                 ))}
-//               </div>
-//             </details>
-//           ) : (
-//             <div key={key} className="flex justify-between">
-//               <span className="font-bold capitalize">{key}</span>
-//               <span>{String(value)}</span>
-//             </div>
-//           )
-//         )}
-//     </div>
-//   );
-// };
 
 const ModalContent = ({ data, addBankData, onSelect, selectedBank }) => {
   if (!data) return null;
@@ -354,7 +252,6 @@ const ModalContent = ({ data, addBankData, onSelect, selectedBank }) => {
           selectedBank={selectedBank}
         />
       </div>
-
       
       {/* Bank Info */}
       {data.bankData?.length > 0 && (
@@ -439,24 +336,6 @@ const ModalContent = ({ data, addBankData, onSelect, selectedBank }) => {
   );
 };
 
-// Reusable Section component
-// const Section = ({ title, data }) => {
-//   if (!data) return null;
-//   return (
-//     <div className="bg-white p-4 rounded-lg">
-//       <h3 className="text-lg font-bold mb-2">{title}</h3>
-//       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-//         {Object.entries(data).map(([key, value]) => (
-//           <div key={key} className="flex justify-between">
-//             <span className="capitalize font-medium">{key}</span>
-//             <span>{String(value || "-")}</span>
-//           </div>
-//         ))}
-//       </div>
-//     </div>
-//   );
-// };
-
 const Section = ({ title, data }) => {
   if (!data) return null;
 
@@ -490,8 +369,6 @@ const AddBankUI = ({ user, banks, onSelect, selectedBank }) => {
   // Hide dropdown for these roles
   if (["bankoperator", "admin", "masteradmin"].includes(role)) return null;
 
-  console.log("banks:", banks);
-
   const eligibleBanks = getEligibleBanks(user, banks);
 
   // onChange handler groups selected branch IDs by bankId and calls onSelect with map
@@ -518,15 +395,6 @@ const AddBankUI = ({ user, banks, onSelect, selectedBank }) => {
       values={flatSelectedBranchIds}
       onChange={handleSelectChange}
     />
-  );
-};
-
-const cleanLoanApplication = (application) => {
-  const excluded = ["createdBy", "createdAt", "updatedAt", "__v", "applicationDate"];
-  return Object.fromEntries(
-    Object.entries(application)
-      .filter(([key]) => !excluded.includes(key))
-      .sort(([a], [b]) => a.localeCompare(b))
   );
 };
 

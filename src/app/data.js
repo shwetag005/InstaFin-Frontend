@@ -225,7 +225,7 @@ export const sidebarList = {
     role: ["masterAdmin", "admin", "bankOperator"],
     route: "/bank/lender",
     icon: "lender",
-    name: "Lender",
+    name: "Manage",
     value: "lender",
   },
   bankOperator: {

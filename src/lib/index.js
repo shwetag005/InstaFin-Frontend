@@ -61,7 +61,7 @@ export const getBankById = (id) => api.get(`${BANKS_API}/${id}`);
 export const createBank = (data) => api.post(BANKS_API, data);
 export const updateBank = (id, data) => api.put(`${BANKS_API}/${id}`, data);
 export const deleteBank = (id) => api.delete(`${BANKS_API}/${id}`);
-export const getBanksByUserId = (role,id) => api.get(`${BANKS_API}/${role}/${id}`);
+export const getBanksByUserId = (role,id,data) => api.post(`${BANKS_API}/${role}/${id}`,data);
 
 // Branch API calls
 export const getBranches = (bankId) => api.get(`${BRANCHES_API}/${bankId}/branches`);
